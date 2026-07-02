@@ -202,19 +202,32 @@ def load_data():
 
 @st.cache_resource
 def load_model_bundle():
+    """
+    Load the saved model bundle. Returns a 4-tuple
+    (model, scaler, feature_cols, decision_threshold).
+
+    Newer bundles (post-refactor) carry `decision_threshold`; older ones
+    fall back to the config default so the dashboard never crashes on
+    a stale model file.
+    """
     import joblib
+    from src.config import DECISION_THRESHOLD
     model_path = get_path('models', 'best_model.pkl')
     if os.path.exists(model_path):
         bundle = joblib.load(model_path)
-        return bundle['model'], bundle['scaler'], bundle['features']
-    return None, None, None
+        threshold = bundle.get('decision_threshold', DECISION_THRESHOLD)
+        return bundle['model'], bundle['scaler'], bundle['features'], float(threshold)
+    return None, None, None, None
 
 df_full, seg_summary = load_data()
-model, scaler, feature_cols = load_model_bundle()
+model, scaler, feature_cols, decision_threshold = load_model_bundle()
 
 if model is not None and 'ChurnProbability' not in df_full.columns:
     X = df_full[feature_cols].fillna(0)
-    df_full['ChurnProbability'] = model.predict_proba(scaler.transform(X))[:, 1]
+    proba = model.predict_proba(scaler.transform(X))[:, 1]
+    df_full['ChurnProbability'] = proba
+    df_full['PredictedChurn']   = (proba >= decision_threshold).astype(int)
+    df_full['RevenueAtRisk']    = (df_full['Balance'].fillna(0) * proba).round(2)
     df_full['Recommendation']   = df_full.apply(get_recommendation, axis=1)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────
@@ -511,11 +524,15 @@ elif page == "⚠️  High-Value at Risk":
     c2.metric("Their Churn Rate", f"{hv['Exited'].mean()*100:.1f}%",
               delta=f"+{(hv['Exited'].mean()-df['Exited'].mean())*100:.1f} pp", delta_color="inverse")
     c3.metric("Avg Balance",     f"€{hv['Balance'].mean():,.0f}")
-    c4.metric("Revenue at Risk", f"€{hv[hv['Exited']==1]['Balance'].sum()/1e6:.1f}M")
+    # Forward-looking revenue at risk: expected loss = balance × P(churn).
+    # This is the proper "what we could lose" number, including not-yet-churned
+    # customers who are predicted to leave.
+    c4.metric("Revenue at Risk (Σ P·Balance)", f"€{hv['RevenueAtRisk'].sum()/1e6:.1f}M")
 
     st.error(f"⚠️ **{len(hv):,} high-value customers** are disengaged — churning at "
              f"**{hv['Exited'].mean()*100:.1f}%** vs **{df['Exited'].mean()*100:.1f}%** average. "
-             f"Revenue at risk: **€{hv[hv['Exited']==1]['Balance'].sum()/1e6:.1f}M**")
+             f"Forward-looking revenue at risk: **€{hv['RevenueAtRisk'].sum()/1e6:.1f}M** "
+             f"(actual lost: €{hv[hv['Exited']==1]['Balance'].sum()/1e6:.1f}M).")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -553,8 +570,16 @@ elif page == "⚠️  High-Value at Risk":
     st.subheader("Top High-Value Disengaged Customers")
     disp = ['Geography','Gender','Age','Balance','NumOfProducts','Tenure','Exited']
     if 'ChurnProbability' in hv.columns: disp.append('ChurnProbability')
-    st.dataframe(hv[disp].sort_values('Balance', ascending=False).head(50).reset_index(drop=True),
-                 use_container_width=True)
+    if 'RevenueAtRisk'    in hv.columns: disp.append('RevenueAtRisk')
+    if 'Recommendation'   in hv.columns: disp.append('Recommendation')
+    st.dataframe(hv[disp].sort_values('RevenueAtRisk' if 'RevenueAtRisk' in hv.columns else 'Balance',
+                                      ascending=False).head(50).reset_index(drop=True),
+                 use_container_width=True,
+                 column_config={
+                     'Balance':          st.column_config.NumberColumn(format='€%.0f'),
+                     'RevenueAtRisk':    st.column_config.NumberColumn(format='€%.0f'),
+                     'ChurnProbability': st.column_config.ProgressColumn(min_value=0, max_value=1, format='%.2f'),
+                 })
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -647,7 +672,7 @@ elif page == "🔮 Churn Predictor":
 
     st.markdown("---")
     if st.button("🔮 Predict Churn Risk", type="primary", use_container_width=True):
-        from src.utils import predict_single
+        from src.inference import predict_single
         customer = {
             'Age':age,'CreditScore':credit_score,'Balance':balance,
             'EstimatedSalary':salary,'Tenure':tenure,'NumOfProducts':products,
@@ -655,7 +680,7 @@ elif page == "🔮 Churn Predictor":
             'HasCrCard':1 if cc=="Yes" else 0,
             'Geography':geography,'Gender':gender
         }
-        result = predict_single(customer, model, scaler, feature_cols)
+        result = predict_single(customer, model, scaler, feature_cols, decision_threshold)
         r1,r2,r3,r4 = st.columns(4)
         r1.metric("Churn Probability", f"{result['churn_probability']}%")
         r2.metric("Risk Level",        result['risk_level'])

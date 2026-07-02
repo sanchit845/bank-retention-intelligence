@@ -1,8 +1,10 @@
 """
-shap_analysis.py
-Global and individual SHAP explainability for the best model.
-"""
+explainability.py
+SHAP-based explainability for the best trained model.
 
+Moved verbatim from the previous src/shap_analysis.py — only the module
+location and one path constant have changed.
+"""
 import os
 import pandas as pd
 import numpy as np
@@ -10,11 +12,20 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-GEO_MAP = {'France': 0, 'Spain': 1, 'Germany': 2}
-GEN_MAP = {'Female': 0, 'Male': 1}
+from src.config import FIGURES_DIR, OUTPUTS_DIR, SAMPLE_SHAP_SIZE, RANDOM_STATE
+from src.modeling import GEO_MAP, GEN_MAP
 
 
-def run_shap(model, scaler, df, feature_cols, output_dir):
+def run_shap(model, scaler, df, feature_cols, output_dir: str = None):
+    """
+    Global and individual SHAP explainability for the best model.
+    Writes outputs/figures/shap_summary.png and outputs/shap_feature_importance.csv
+    (the CSV location is preserved from the previous module).
+    """
+    output_dir = output_dir or str(OUTPUTS_DIR)
+    figures_dir = os.path.join(output_dir, 'figures')
+    os.makedirs(figures_dir, exist_ok=True)
+
     try:
         import shap
     except ImportError:
@@ -23,14 +34,14 @@ def run_shap(model, scaler, df, feature_cols, output_dir):
 
     dfc = df.copy()
     dfc['Geography_enc'] = dfc['Geography'].map(GEO_MAP).fillna(0).astype(int)
-    dfc['Gender_enc'] = dfc['Gender'].map(GEN_MAP).fillna(0).astype(int)
+    dfc['Gender_enc']    = dfc['Gender'].map(GEN_MAP).fillna(0).astype(int)
 
     X = dfc[feature_cols].fillna(0)
     X_scaled = scaler.transform(X)
 
     # Use a sample for speed if dataset is large
-    sample_size = min(1000, len(X_scaled))
-    np.random.seed(42)
+    sample_size = min(SAMPLE_SHAP_SIZE, len(X_scaled))
+    np.random.seed(RANDOM_STATE)
     idx = np.random.choice(len(X_scaled), sample_size, replace=False)
     X_sample = X_scaled[idx]
 
@@ -45,7 +56,7 @@ def run_shap(model, scaler, df, feature_cols, output_dir):
             shap_values = shap_values[1]
     except Exception:
         # Fallback to KernelExplainer
-        background = shap.sample(X_scaled, 100, random_state=42)
+        background = shap.sample(X_scaled, 100, random_state=RANDOM_STATE)
         explainer = shap.KernelExplainer(model.predict_proba, background)
         shap_values = explainer.shap_values(X_sample)
         if isinstance(shap_values, list):
@@ -61,7 +72,7 @@ def run_shap(model, scaler, df, feature_cols, output_dir):
     )
     plt.title('SHAP Feature Importance — Global Churn Drivers', fontsize=13, fontweight='bold')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figures', 'shap_summary.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(figures_dir, 'shap_summary.png'), dpi=150, bbox_inches='tight')
     plt.close()
 
     # ── Mean absolute SHAP values to CSV ─────────────────────────────────
