@@ -12,19 +12,24 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from src.config import FIGURES_DIR, OUTPUTS_DIR, SAMPLE_SHAP_SIZE, RANDOM_STATE
+from src.config import FIGURES_DIR, DATA_PROCESSED_DIR, SAMPLE_SHAP_SIZE, RANDOM_STATE
 from src.modeling import GEO_MAP, GEN_MAP
 
 
 def run_shap(model, scaler, df, feature_cols, output_dir: str = None):
     """
     Global and individual SHAP explainability for the best model.
-    Writes outputs/figures/shap_summary.png and outputs/shap_feature_importance.csv
-    (the CSV location is preserved from the previous module).
+    Writes data/processed/figures/shap_summary.png and
+    data/processed/shap_feature_importance.csv.
+
+    The `output_dir` argument is preserved for back-compat but the SHAP
+    figures always land in FIGURES_DIR — keeping all generated charts
+    in one canonical place.
     """
-    output_dir = output_dir or str(OUTPUTS_DIR)
-    figures_dir = os.path.join(output_dir, 'figures')
-    os.makedirs(figures_dir, exist_ok=True)
+    # output_dir is intentionally unused; kept for API stability.
+    _ = output_dir
+    figures_dir = FIGURES_DIR
+    figures_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         import shap
@@ -72,7 +77,7 @@ def run_shap(model, scaler, df, feature_cols, output_dir: str = None):
     )
     plt.title('SHAP Feature Importance — Global Churn Drivers', fontsize=13, fontweight='bold')
     plt.tight_layout()
-    plt.savefig(os.path.join(figures_dir, 'shap_summary.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(figures_dir / 'shap_summary.png', dpi=150, bbox_inches='tight')
     plt.close()
 
     # ── Mean absolute SHAP values to CSV ─────────────────────────────────
@@ -81,7 +86,7 @@ def run_shap(model, scaler, df, feature_cols, output_dir: str = None):
         'MeanAbsSHAP': np.abs(shap_values).mean(axis=0)
     }).sort_values('MeanAbsSHAP', ascending=False)
 
-    mean_shap.to_csv(os.path.join(output_dir, 'shap_feature_importance.csv'), index=False)
+    mean_shap.to_csv(DATA_PROCESSED_DIR / 'shap_feature_importance.csv', index=False)
 
     print(f"  [shap] Top 5 churn drivers:")
     for _, row in mean_shap.head(5).iterrows():

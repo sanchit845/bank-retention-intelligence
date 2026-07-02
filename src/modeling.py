@@ -240,7 +240,7 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
     """
     Compute the standard metric set, write a model_comparison.csv if missing,
     and emit confusion-matrix, ROC, feature-importance, and engagement/product
-    figures under output_dir/figures/.
+    figures under output_dir/.
 
     Uses the held-out test split (60/20/20) and reports metrics at the
     *tuned* decision_threshold, not at the default 0.5.
@@ -248,7 +248,6 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
     output_dir = output_dir or str(FIGURES_DIR)
     threshold = DECISION_THRESHOLD if decision_threshold is None else decision_threshold
     os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(os.path.join(output_dir, 'figures'), exist_ok=True)
 
     dfc = df.copy()
     dfc['Geography_enc'] = dfc['Geography'].map(GEO_MAP).fillna(0).astype(int)
@@ -299,7 +298,7 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
             ax.text(j, i, str(cm[i, j]), ha='center', va='center',
                     color='white' if cm[i, j] > cm.max() / 2 else 'black', fontsize=14)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figures', 'confusion_matrix.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'confusion_matrix.png'), dpi=150, bbox_inches='tight')
     plt.close()
 
     # ── ROC Curve ────────────────────────────────────────────────────────
@@ -314,7 +313,7 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
     ax.legend(fontsize=10)
     ax.grid(True, alpha=0.3, linestyle='--')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figures', 'roc_curve.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'roc_curve.png'), dpi=150, bbox_inches='tight')
     plt.close()
 
     # ── Feature Importance ───────────────────────────────────────────────
@@ -334,7 +333,7 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
         ax.set_title('Feature Importance — Top Churn Drivers', fontsize=13, fontweight='bold')
         ax.grid(True, axis='x', alpha=0.3, linestyle='--')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'figures', 'feature_importance.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(output_dir, 'feature_importance.png'), dpi=150, bbox_inches='tight')
         plt.close()
 
     # ── Engagement vs Churn chart ─────────────────────────────────────────
@@ -350,7 +349,7 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
     ax.set_ylim(0, 35)
     ax.grid(True, axis='y', alpha=0.3, linestyle='--')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figures', 'engagement_vs_churn.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'engagement_vs_churn.png'), dpi=150, bbox_inches='tight')
     plt.close()
 
     # ── Products vs Churn chart ───────────────────────────────────────────
@@ -368,7 +367,7 @@ def evaluate_model(model, scaler, df, feature_cols, output_dir: str = None,
     ax.set_ylim(0, 115)
     ax.grid(True, axis='y', alpha=0.3, linestyle='--')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figures', 'products_vs_churn.png'), dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(output_dir, 'products_vs_churn.png'), dpi=150, bbox_inches='tight')
     plt.close()
 
     return metrics

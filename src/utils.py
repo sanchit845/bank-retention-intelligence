@@ -25,7 +25,6 @@ from src.config import (
     DATA_PROCESSED_DIR,
     MODELS_DIR,
     FIGURES_DIR,
-    SCREENSHOTS_DIR,
     DEFAULT_MODEL_NAME,
 )
 
@@ -103,20 +102,14 @@ def load_processed(filename: str) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
-def save_figure(fig, filename: str, folder: str = 'outputs/figures', dpi: int = 150):
+def save_figure(fig, filename: str, dpi: int = 150):
     """
-    Save a matplotlib figure.
-
-    Default folder is outputs/figures (the canonical home for all
-    generated charts). Notebooks that want reports/screenshots pass
-    folder='reports/screenshots' explicitly.
+    Save a matplotlib figure to data/processed/figures/ (the canonical
+    home for every chart the pipeline produces). Back-compat: a `folder`
+    kwarg is accepted but ignored, so older notebook code keeps working
+    after the outputs/ directory was removed.
     """
-    if folder in ('outputs/figures', 'figures'):
-        path = FIGURES_DIR / filename
-    elif folder in ('reports/screenshots', 'screenshots'):
-        path = SCREENSHOTS_DIR / filename
-    else:
-        path = PROJECT_ROOT / folder / filename
+    path = FIGURES_DIR / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=dpi, bbox_inches='tight')
     print(f"  Figure saved → {path}")

@@ -17,32 +17,43 @@ bank-retention-intelligence/
 │       ├── model_comparison.csv       ← All 7 model metrics (notebook 03)
 │       ├── feature_importance.csv     ← Feature importance scores
 │       ├── final_segmented_dataset.csv← Full enriched dataset (notebook 04)
-│       └── segment_insights.csv       ← Cluster profiles
+│       ├── segment_insights.csv       ← Cluster profiles
+│       ├── customers_enriched.csv     ← Final enriched dataset (pipeline)
+│       ├── segment_summary.csv        ← KMeans cluster summary
+│       ├── shap_feature_importance.csv← SHAP mean |values|
+│       └── figures/                   ← All saved charts (PNG)
 │
 ├── models/
-│   └── best_model.pkl                 ← Trained CatBoost + scaler + features
+│   └── best_model.pkl                 ← Trained CatBoost + scaler + features + threshold
 │
 ├── notebooks/
 │   ├── 01_eda.ipynb                   ← Exploratory Data Analysis
 │   ├── 02_preprocessing.ipynb         ← Feature Engineering
 │   ├── 03_clustering.ipynb            ← Model Training & Evaluation
-│   └── 04_business_insights.ipynb     ← Segmentation, RSI, Strategy
-│
-├── reports/
-│   └── screenshots/                   ← All saved charts (PNG)
+│   ├── 04_business_insights.ipynb     ← Segmentation, RSI, Strategy
+│   └── run_all.py                     ← Re-execute all 4 in one go
 │
 ├── src/
 │   ├── __init__.py
+│   ├── config.py                      ← Single source of truth for paths + tunables
 │   ├── data_cleaning.py               ← Load, validate, clean
 │   ├── feature_engineering.py         ← 8 engineered features
 │   ├── clustering.py                  ← KMeans, RSI, recommendations
-│   ├── visualization.py               ← All reusable chart functions
-│   └── utils.py                       ← File I/O, model save/load, helpers
+│   ├── modeling.py                    ← 7-model training + evaluation + threshold tuning
+│   ├── inference.py                   ← predict_churn, predict_single
+│   ├── explainability.py              ← SHAP summary
+│   ├── pipeline.py                    ← Orchestrator (called by main.py)
+│   ├── visualization.py               ← Matplotlib chart helpers (notebook-only)
+│   └── utils.py                       ← File I/O, model save/load, save_figure
 │
 ├── streamlit_app/
 │   └── app.py                         ← 7-page interactive dashboard
 │
+├── tests/
+│   └── test_regressions.py            ← 12 regression tests
+│
 ├── main.py                            ← One-command full pipeline runner
+├── run_pipeline.py                    ← 5-line re-export of main()
 ├── requirements.txt
 ├── .gitignore
 └── README.md

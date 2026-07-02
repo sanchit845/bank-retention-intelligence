@@ -12,11 +12,9 @@ from pathlib import Path
 PROJECT_ROOT       = Path(__file__).resolve().parent.parent
 DATA_RAW           = PROJECT_ROOT / 'data' / 'raw' / 'European_Bank.csv'
 DATA_PROCESSED_DIR = PROJECT_ROOT / 'data' / 'processed'
+# Figures live alongside the CSVs that produced them — single artifact tree.
+FIGURES_DIR        = DATA_PROCESSED_DIR / 'figures'
 MODELS_DIR         = PROJECT_ROOT / 'models'
-OUTPUTS_DIR        = PROJECT_ROOT / 'outputs'
-FIGURES_DIR        = OUTPUTS_DIR / 'figures'
-OUTPUTS_REPORTS    = OUTPUTS_DIR / 'reports'
-SCREENSHOTS_DIR    = PROJECT_ROOT / 'reports' / 'screenshots'
 
 DEFAULT_MODEL_NAME = 'best_model.pkl'
 

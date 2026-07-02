@@ -12,7 +12,7 @@ import os
 
 import pandas as pd
 
-from src.config import DATA_RAW, DATA_PROCESSED_DIR, OUTPUTS_DIR
+from src.config import DATA_RAW, DATA_PROCESSED_DIR, FIGURES_DIR
 from src.data_cleaning       import load_and_clean, get_summary
 from src.feature_engineering import engineer_features
 from src.utils               import save_processed, encode_categoricals
@@ -67,12 +67,13 @@ def run_full_pipeline():
 
     # ── 4. Train 7 models + tune threshold on val ─────────────────────────
     model, scaler, feature_cols, decision_threshold = train_all_models(df)
+    # Evaluate; figures land in data/processed/figures/ via FIGURES_DIR.
     metrics = evaluate_model(model, scaler, df, feature_cols,
-                             output_dir=str(OUTPUTS_DIR),
+                             output_dir=str(FIGURES_DIR),
                              decision_threshold=decision_threshold)
 
     # ── 5. SHAP explainability ────────────────────────────────────────────
-    run_shap(model, scaler, df, feature_cols, output_dir=str(OUTPUTS_DIR))
+    run_shap(model, scaler, df, feature_cols)
 
     # ── 6. RSI ────────────────────────────────────────────────────────────
     df = compute_rsi(df)
