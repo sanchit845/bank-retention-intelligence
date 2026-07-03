@@ -1,0 +1,5 @@
+Cluster,Count,ChurnRate,AvgBalance,AvgAge,AvgProducts,ActiveRate
+High Risk,2003,20.7,11412.0,37.2,1.82,0.0
+Premium Loyal,3009,16.0,121886.0,39.7,1.32,100.0
+Wealthy Disengaged,2846,31.2,123186.0,38.6,1.32,0.0
+Young Active,2142,11.9,10969.0,39.8,1.84,100.0
